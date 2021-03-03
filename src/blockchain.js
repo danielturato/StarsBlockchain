@@ -65,16 +65,23 @@ class Blockchain {
         let self = this;
         return new Promise(async (resolve, reject) => {
             try {
-                self.height += 1
-                block.height = self.height
+                block.height = self.height + 1
                 block.time = new Date().getTime().toString().slice(0, -3)
 
-                if (self.height > 0) {
-                    block.previousBlockHash = self.chain[self.height-1].hash
+                if (block.height > 0) {
+                    block.previousBlockHash = self.chain[block.height-1].hash
                 }
 
-                self.chain.push(block)
                 block.hash = SHA256(JSON.stringify(block)).toString()
+
+                let chainErrors = await self.validateChain()
+
+                if (chainErrors.length === 0) {
+                    self.chain.push(block)
+                    self.height += 1
+                } else {
+                    reject(new Error("The chain is now defective, so no new blocks can be added: " + chainErrors))
+                }
 
                 resolve(block)
 
@@ -170,7 +177,8 @@ class Blockchain {
         let self = this;
         return new Promise((resolve, reject) => {
             let block = self.chain.filter(p => p.height === height)[0];
-            if(block){
+
+            if (block){
                 resolve(block);
             } else {
                 resolve(null);
@@ -188,16 +196,19 @@ class Blockchain {
         let self = this;
         let stars = [];
         return new Promise(async (resolve, reject) => {
-            for (let i = 1; i <= self.height; i++) {
-                let block = self.chain[i]
-                await block.getBData()
-                           .then((data) => {
-                                if (data.address === address) {
-                                    stars.push(data.star)
-                                }
-                            })
+            try {
+                for (let i = 1; i <= self.height; i++) {
+                    let block = self.chain[i]
+                    let data = block.getBData()
+
+                    if (data.address === address) {
+                        stars.push(data.star)
+                    }
+                }
+                resolve(stars)
+            } catch(err) {
+                reject(err)
             }
-            resolve(stars)
         });
 
     }
@@ -222,9 +233,9 @@ class Blockchain {
 
                 if (block.previousBlockHash !== previousHash) {
                     errorLog.push(`The block with hash ${block.hash} has the incorrect previous block hash`)
-                } else {
-                    previousHash = block.hash
                 }
+
+                previousHash = block.hash
             }
             resolve(errorLog)
         });

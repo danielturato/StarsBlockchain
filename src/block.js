@@ -68,27 +68,22 @@ class Block {
      *     or Reject with an error.
      */
     getBData() {
-        let self = this
+        // Getting the encoded data saved in the Block
+        let data = this.body
 
-        return new Promise((resolve, reject) => {
-            // Getting the encoded data saved in the Block
-            let data = self.body
+        // Decoding the data to retrieve the JSON representation of the object
+        let decodedData = hex2ascii(data)
 
-            // Decoding the data to retrieve the JSON representation of the object
-            let decodedData = hex2ascii(data)
+        // Parse the data to an object to be retrieve.
+        let parsedData = JSON.parse(decodedData)
 
-            // Parse the data to an object to be retrieve.
-            let parsedData = JSON.parse(decodedData)
+        // Resolve with the data if the object isn't the Genesis block
+        if (this.height === 0) {
+            throw new Error("This is the genesis block")
+        }
 
-            // Resolve with the data if the object isn't the Genesis block
-            if (self.height === 0) {
-                reject(new Error("This is the genesis block"))
-            }
-
-            resolve(parsedData)
-        });
+        return parsedData
     }
-
 }
 
 module.exports.Block = Block;                    // Exposing the Block class as a module
