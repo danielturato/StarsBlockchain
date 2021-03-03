@@ -65,17 +65,19 @@ class Blockchain {
         let self = this;
         return new Promise(async (resolve, reject) => {
             try {
-                block.height = ++self.height
+                self.height += 1
+                block.height = self.height
                 block.time = new Date().getTime().toString().slice(0, -3)
 
                 if (self.height > 0) {
                     block.previousBlockHash = self.chain[self.height-1].hash
-
                 }
-                block.hash = SHA256(JSON.stringify(block)).toString()
 
                 self.chain.push(block)
+                block.hash = SHA256(JSON.stringify(block)).toString()
+
                 resolve(block)
+
             } catch (error) {
                 reject(new Error("An error occured whilst trying to add this block to the blockchain: " +
                                   error.toString()))
@@ -213,7 +215,7 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
             for (let i = 0; i <= self.height; i++) {
                 let block = self.chain[i]
-                 block.validate()
+                await block.validate()
                       .catch((err) => {
                           errorLog.push(err.toString())
                       })
